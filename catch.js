@@ -5,16 +5,29 @@ window.onload = function() {
 		context = canvas.getContext("2d"),
 		size = canvas.width = canvas.height = Math.min(window.innerWidth, window.innerHeight),
 		mouseX = mouseY = 0,
-		frameCount = 0;
+		frameCount,
+		settings = {"gamemode": "chase",
+					"strategy": "dodge"};
+		
 	context.translate(size/2, size/2);
 	context.scale(size/BOARD_SIZE, size/BOARD_SIZE);
 		
-	var chaser = new Player([0,0], [0,0], .1, 0, "#ff0000"),
-		runner = new Player([BOARD_SIZE*.3, 0], [0,0], .1, 0, "#0000ff"),
-		boundary = new BoundaryRamp(-BOARD_SIZE/2, BOARD_SIZE/2, BOARD_SIZE/2, -BOARD_SIZE/2, 
+	var boundary = new BoundaryRamp(-BOARD_SIZE/2, BOARD_SIZE/2, BOARD_SIZE/2, -BOARD_SIZE/2, 
 									BOARD_SIZE*.2, .05);
+	var chaser, runner;
 		
-	render();
+	run();	
+	
+	function run() {
+		init();
+		render();
+	}
+	
+	function init() {
+		frameCount = 0;
+		chaser = new Player([random(-BOARD_SIZE/3, BOARD_SIZE/3), random(-BOARD_SIZE/3, BOARD_SIZE/3)], [random(-2,2), random(-2,2)], .1, 0, "#ff0000");
+		runner = new Player([random(-BOARD_SIZE/3, BOARD_SIZE/3), random(-BOARD_SIZE/3, BOARD_SIZE/3)], [random(-2,2), random(-2,2)], .1, 0, "#0000ff");
+	}
 	
 	function render() {
 		context.clearRect(-BOARD_SIZE/2, -BOARD_SIZE/2, BOARD_SIZE, BOARD_SIZE);
@@ -22,8 +35,9 @@ window.onload = function() {
 		chaser.draw(context);
 		runner.draw(context);
 		
-		if (doGameLogic(runner, chaser)) {
+		if (doChaseLogic(runner, chaser)) {
 			alert("Gotcha!");
+			run();
 			return;
 		}
 		
@@ -44,14 +58,27 @@ window.onload = function() {
 		return coordinate / size * BOARD_SIZE - BOARD_SIZE/2;
 	}
 	
-	function doGameLogic(runner, chaser) {
-		chaser.setHeadingTowards(...runner.position);
+	function random(lower, upper) {
+		return Math.random()*(upper-lower)+lower;
+	}
+	
+	function doChaseLogic(runner, chaser) {
+		if(settings["gamemode"] == "chase")
+			chaser.setHeadingTowards(...runner.position);
+		else if(settings["gamemode"] == "mouse") 
+			chaser.setHeadingTowards(mouseX, mouseY);
 		chaser.accelerate(.1);
 		chaser.applyRamp(boundary);
 		
-		runner.setHeadingTowards(
-			- chaser.position[1] + runner.position[1] + runner.position[0],
-			+ chaser.position[0] - runner.position[0] + runner.position[1]);
+		if(settings["strategy"] == "dodge") {
+			runner.setHeadingTowards(
+				- chaser.position[1] + runner.position[1] + runner.position[0],
+				+ chaser.position[0] - runner.position[0] + runner.position[1]);
+		} else if(settings["strategy"] == "run") {
+			runner.setHeadingTowards(
+				- chaser.position[0] + 2*runner.position[0],
+				- chaser.position[1] + 2*runner.position[1]);
+		}
 		runner.accelerate(.1);
 		runner.applyRamp(boundary);
 		
@@ -59,7 +86,7 @@ window.onload = function() {
 		runner.update();
 		
 		var dist = Math.sqrt((chaser.position[0]-runner.position[0])**2+(chaser.position[1]-runner.position[1])**2);
-		if(dist < 10) 
+		if(dist < BOARD_SIZE*.02) 
 			return true;
 		return false;
 	}
@@ -148,7 +175,7 @@ class Player {
 	
 	drawHistory(context2d) {
 		for(var i=0; i<this.histori.length; i++) {
-			var transparency = "" + Math.round(9*i/this.histori.length)
+			var transparency = "" + Math.round(5*i/this.histori.length)
 			var color = this.color + transparency + transparency
 			if(this.histori[i] != null)
 				this.histori[i].drawArrow(context2d, color);
