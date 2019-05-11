@@ -1,22 +1,23 @@
+const BOARD_SIZE = 1000;
+
 window.onload = function() {
 	var canvas = document.getElementById("canvas"),
 		context = canvas.getContext("2d"),
-		width = canvas.width = window.innerWidth,
-		height = canvas.height = window.innerHeight,
-		mouseX = 0,
-		mouseY = 0,
+		size = canvas.width = canvas.height = Math.min(window.innerWidth, window.innerHeight),
+		mouseX = mouseY = 0,
 		frameCount = 0;
-	context.translate(width*.5, height*.5);
+	context.translate(size/2, size/2);
+	context.scale(size/BOARD_SIZE, size/BOARD_SIZE);
 		
 	var chaser = new Player([0,0], [0,0], .1, 0, "#ff0000"),
-		runner = new Player([width*.3, 0], [0,0], .1, 0, "#0000ff"),
-		boundary = new BoundaryRamp(-height*.5,width*.5,height*.5,-width*.5, 
-									Math.min(width, height)*.2, .05);
+		runner = new Player([BOARD_SIZE*.3, 0], [0,0], .1, 0, "#0000ff"),
+		boundary = new BoundaryRamp(-BOARD_SIZE/2, BOARD_SIZE/2, BOARD_SIZE/2, -BOARD_SIZE/2, 
+									BOARD_SIZE*.2, .05);
 		
 	render();
 	
 	function render() {
-		context.clearRect(-width*.5,-height*.5,width,height);
+		context.clearRect(-BOARD_SIZE/2, -BOARD_SIZE/2, BOARD_SIZE, BOARD_SIZE);
 		boundary.draw(context);
 		chaser.draw(context);
 		runner.draw(context);
@@ -35,9 +36,13 @@ window.onload = function() {
 	}
 	
 	document.body.addEventListener("mousemove", function(event) {
-		mouseX = event.clientX -  width*.5;
-		mouseY = event.clientY - height*.5;
+		mouseX = translate(event.clientX);
+		mouseY = translate(event.clientY);
 	});
+	
+	function translate(coordinate) {
+		return coordinate / size * BOARD_SIZE - BOARD_SIZE/2;
+	}
 	
 	function doGameLogic(runner, chaser) {
 		chaser.setHeadingTowards(...runner.position);
@@ -127,14 +132,15 @@ class Player {
 		context2d.translate(this.position[0], this.position[1]);
 		context2d.rotate(this.heading);
 		
+		var scale = .01;
 		context2d.strokeStyle = color;
 		context2d.beginPath();
-		context2d.moveTo(-20, 0);
+		context2d.moveTo(-BOARD_SIZE*2*scale, 0);
 		context2d.lineTo(0, 0);
 		context2d.moveTo(0, 0);
-		context2d.lineTo(-10, 10);
+		context2d.lineTo(-BOARD_SIZE*scale, BOARD_SIZE*scale);
 		context2d.moveTo(0, 0);
-		context2d.lineTo(-10, -10);
+		context2d.lineTo(-BOARD_SIZE*scale, -BOARD_SIZE*scale);
 		context2d.stroke();
 		
 		context2d.restore();
