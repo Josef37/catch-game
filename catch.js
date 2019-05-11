@@ -9,7 +9,7 @@ window.onload = function() {
 	context.translate(width*.5, height*.5);
 		
 	var chaser = new Player([0,0], [0,0], .1, 0, "#ff0000"),
-		runner = new Player([width*.3, 0], [0,3], .1, 0, "#0000ff"),
+		runner = new Player([width*.3, 0], [0,0], .1, 0, "#0000ff"),
 		boundary = new BoundaryRamp(-height*.5,width*.5,height*.5,-width*.5, 
 									Math.min(width, height)*.2, .05);
 		
@@ -21,18 +21,10 @@ window.onload = function() {
 		chaser.draw(context);
 		runner.draw(context);
 		
-		chaser.setHeadingTowards(...runner.position);
-		chaser.accelerate(.1);
-		chaser.applyRamp(boundary);
-		
-		runner.setHeadingTowards(
-			- chaser.position[0] + 2*runner.position[0],
-			- chaser.position[1] + 2*runner.position[1]);
-		runner.accelerate(.1);
-		runner.applyRamp(boundary);
-		
-		chaser.update();
-		runner.update();
+		if (doGameLogic(runner, chaser)) {
+			alert("Gotcha!");
+			return;
+		}
 		
 		if(frameCount % 15 == 0) {
 			chaser.recordHistory();
@@ -46,6 +38,26 @@ window.onload = function() {
 		mouseX = event.clientX -  width*.5;
 		mouseY = event.clientY - height*.5;
 	});
+	
+	function doGameLogic(runner, chaser) {
+		chaser.setHeadingTowards(...runner.position);
+		chaser.accelerate(.1);
+		chaser.applyRamp(boundary);
+		
+		runner.setHeadingTowards(
+			- chaser.position[1] + runner.position[1] + runner.position[0],
+			+ chaser.position[0] - runner.position[0] + runner.position[1]);
+		runner.accelerate(.1);
+		runner.applyRamp(boundary);
+		
+		chaser.update();
+		runner.update();
+		
+		var dist = Math.sqrt((chaser.position[0]-runner.position[0])**2+(chaser.position[1]-runner.position[1])**2);
+		if(dist < 10) 
+			return true;
+		return false;
+	}
 };
 
 class Player {
